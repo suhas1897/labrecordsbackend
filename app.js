@@ -52,6 +52,10 @@ transporter.verify((error, success) => {
       console.log('Email transporter is ready');
     }
     });
+
+app.get("/", (req, res) => {
+    res.send({ status: "Started" });
+});
     
 
 const authenticate = (req, res, next) => {
