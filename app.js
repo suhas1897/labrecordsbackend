@@ -19,13 +19,23 @@ const fs = require("fs");
 dotenv.config();
 const app = express();
 app.use(express.json());
-app.use(cors({
-    origin: 'https://indiumlabrecords.onrender.com/',
-    // origin: 'http://localhost:3000',
+// app.use(cors({
+//     origin: 'https://indiumlabrecords.onrender.com/',
+//     // origin: 'http://localhost:3000',
     
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    allowedHeaders: ['Content-Type', 'Authorization']
-}));
+//     methods: ['GET', 'POST', 'PUT', 'DELETE'],
+//     allowedHeaders: ['Content-Type', 'Authorization']
+// }));
+
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', 'https://indiumlabrecords.onrender.com'); // No trailing slash
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200); // Handle preflight
+  }
+  next();
+});
 // app.use(cors());
 mongoose.connect(process.env.MONGO_URI, {
     useNewUrlParser: true,
