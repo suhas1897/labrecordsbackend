@@ -21,8 +21,8 @@ dotenv.config();
 const app = express();
 app.use(express.json());
 app.use(cors({
-    origin: 'https://indiumlabrecords.onrender.com',
-    // origin: 'http://localhost:3000',
+    // origin: 'https://indiumlabrecords.onrender.com/',
+    origin: 'http://localhost:3000',
     
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization']
@@ -797,22 +797,51 @@ app.post('/scrapRequest', authenticate, upload.single("scrapPhoto"), async (req,
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: `${process.env.ADMIN_EMAIL}, ${process.env.ADMIN_EMAIL1}, ${process.env.ADMIN_EMAIL2}`,
-      subject: `Scrap Request Notification - Chemical ID: ${chemicalId}`,
+      subject: `New Chemical Request Notification - ${chemicalName}`,
       html: `
         <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-          <h2 style="color: #2c3e50;">Scrap Request Notification</h2>
-          <p>Dear Admin,</p>
-          <p>User ${user.name} has requested to scrap ${chemical.chemicalName} (ID: ${chemicalId}).</p>
-          <p>Please review the attached photo and take action:</p>
-          <a href="${approveLink}" style="padding: 10px 20px; background-color: #28a745; color: white; text-decoration: none; border-radius: 5px;">Approve</a>
-          <a href="${denyLink}" style="padding: 10px 20px; background-color: #dc3545; color: white; text-decoration: none; border-radius: 5px; margin-left: 10px;">Deny</a>
+          <h2 style="color: #2c3e50;">New Chemical Request Notification</h2>
+          <p>Dear Administrators,</p>
+          <p>We have received a new chemical request from one of our users. Please find the details below:</p>
+          
+          <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+            <tr style="background-color: #f2f2f2;">
+              <td style="padding: 10px; border: 1px solid #ddd;"><strong>User Name:</strong></td>
+              <td style="padding: 10px; border: 1px solid #ddd;">${user.name}</td>
+            </tr>
+            <tr>
+              <td style="padding: 10px; border: 1px solid #ddd;"><strong>Chemical Name:</strong></td>
+              <td style="padding: 10px; border: 1px solid #ddd;">${chemicalName}</td>
+            </tr>
+            <tr style="background-color: #f2f2f2;">
+              <td style="padding: 10px; border: 1px solid #ddd;"><strong>Request Date:</strong></td>
+              <td style="padding: 10px; border: 1px solid #ddd;">${new Date().toLocaleDateString()}</td>
+            </tr>
+          </table>
+    
+          <p>Please review this request at your earliest convenience and take appropriate action using the links below:</p>
+          <div style="margin: 20px 0;">
+            <a href="${approveLink}" style="display: inline-block; padding: 10px 20px; background-color: #28a745; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;">Approve Request</a>
+            <a href="${denyLink}" style="display: inline-block; padding: 10px 20px; background-color: #dc3545; color: white; text-decoration: none; border-radius: 5px; font-weight: bold; margin-left: 15px;">Deny Request</a>
+          </div>
+    
+          <p>If you need additional information, please feel free to contact the requesting user or the support team.</p>
+          
+          <p>Best regards,</p>
+          <p><strong>Chemical Management System</strong><br>
+          Automated Notification Service<br>
+          <a href="mailto:${process.env.EMAIL_USER}">${process.env.EMAIL_USER}</a></p>
+          
+          <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+          <p style="font-size: 12px; color: #777;">This is an automated email. Please do not reply directly to this message.</p>
         </div>
       `,
+    };
       attachments: [{
         filename: scrapPhoto.originalname,
         path: scrapPhoto.path,
       }],
-    };
+    
 
     await transporter.sendMail(mailOptions);
     fs.unlinkSync(scrapPhoto.path); // Delete the file after sending email
@@ -910,8 +939,43 @@ app.get('/scrap/deny/:token', async (req, res) => {
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: user.email,
-      subject: 'Scrap Request Denied',
-      html: `<p>Your scrap request for ${chemical.chemicalName} (ID: ${chemicalId}) has been denied by the admin.</p>`,
+      subject: 'Scrap Request Denial Notification',
+      html: `
+        <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+          <h2 style="color: #2c3e50;">Scrap Request Denial Notification</h2>
+          <p>Dear ${user.name || 'User'},</p>
+          <p>We regret to inform you that your scrap request has been reviewed and denied by the administrator. Please find the details below:</p>
+          
+          <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+            <tr style="background-color: #f2f2f2;">
+              <td style="padding: 10px; border: 1px solid #ddd;"><strong>Chemical ID:</strong></td>
+              <td style="padding: 10px; border: 1px solid #ddd;">${chemicalId}</td>
+            </tr>
+            <tr>
+              <td style="padding: 10px; border: 1px solid #ddd;"><strong>Chemical Name:</strong></td>
+              <td style="padding: 10px; border: 1px solid #ddd;">${chemical.chemicalName}</td>
+            </tr>
+            <tr style="background-color: #f2f2f2;">
+              <td style="padding: 10px; border: 1px solid #ddd;"><strong>Request Date:</strong></td>
+              <td style="padding: 10px; border: 1px solid #ddd;">${new Date().toLocaleDateString()}</td>
+            </tr>
+            <tr>
+              <td style="padding: 10px; border: 1px solid #ddd;"><strong>Status:</strong></td>
+              <td style="padding: 10px; border: 1px solid #ddd;">Denied</td>
+            </tr>
+          </table>
+    
+          <p>If you have any questions or require further clarification regarding this decision, please feel free to contact the administration team.</p>
+          
+          <p>Best regards,</p>
+          <p><strong>Chemical Management System</strong><br>
+          Automated Notification Service<br>
+          <a href="mailto:${process.env.EMAIL_USER}">${process.env.EMAIL_USER}</a></p>
+          
+          <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+          <p style="font-size: 12px; color: #777;">This is an automated email. Please do not reply directly to this message.</p>
+        </div>
+      `,
     };
     await transporter.sendMail(mailOptions);
 
@@ -940,14 +1004,43 @@ app.post('/newChemicalRequest', authenticate, async (req, res) => {
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: `${process.env.ADMIN_EMAIL}, ${process.env.ADMIN_EMAIL1}, ${process.env.ADMIN_EMAIL2}`,
-      subject: `New Chemical Request from ${user.name} - ${chemicalName}`,
+      subject: `New Chemical Request Notification - ${chemicalName}`,
       html: `
         <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
           <h2 style="color: #2c3e50;">New Chemical Request Notification</h2>
-          <p>Dear Admin,</p>
-          <p>User ${user.name} has requested a new chemical: ${chemicalName}.</p>
-          <a href="${approveLink}" style="padding: 10px 20px; background-color: #28a745; color: white; text-decoration: none; border-radius: 5px;">Approve</a>
-          <a href="${denyLink}" style="padding: 10px 20px; background-color: #dc3545; color: white; text-decoration: none; border-radius: 5px; margin-left: 10px;">Deny</a>
+          <p>Dear Administrators,</p>
+          <p>We have received a new chemical request from one of our users. Please find the details below:</p>
+          
+          <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+            <tr style="background-color: #f2f2f2;">
+              <td style="padding: 10px; border: 1px solid #ddd;"><strong>User Name:</strong></td>
+              <td style="padding: 10px; border: 1px solid #ddd;">${user.name}</td>
+            </tr>
+            <tr>
+              <td style="padding: 10px; border: 1px solid #ddd;"><strong>Chemical Name:</strong></td>
+              <td style="padding: 10px; border: 1px solid #ddd;">${chemicalName}</td>
+            </tr>
+            <tr style="background-color: #f2f2f2;">
+              <td style="padding: 10px; border: 1px solid #ddd;"><strong>Request Date:</strong></td>
+              <td style="padding: 10px; border: 1px solid #ddd;">${new Date().toLocaleDateString()}</td>
+            </tr>
+          </table>
+    
+          <p>Please review this request at your earliest convenience and take appropriate action using the links below:</p>
+          <div style="margin: 20px 0;">
+            <a href="${approveLink}" style="display: inline-block; padding: 10px 20px; background-color: #28a745; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;">Approve Request</a>
+            <a href="${denyLink}" style="display: inline-block; padding: 10px 20px; background-color: #dc3545; color: white; text-decoration: none; border-radius: 5px; font-weight: bold; margin-left: 15px;">Deny Request</a>
+          </div>
+    
+          <p>If you need additional information, please feel free to contact the requesting user directly.</p>
+          
+          <p>Best regards,</p>
+          <p><strong>Chemical Management System</strong><br>
+          Automated Notification Service<br>
+          <a href="mailto:${process.env.EMAIL_USER}">${process.env.EMAIL_USER}</a></p>
+          
+          <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+          <p style="font-size: 12px; color: #777;">This is an automated email. Please do not reply directly to this message.</p>
         </div>
       `,
     };
