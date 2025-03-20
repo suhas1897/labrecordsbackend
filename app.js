@@ -14,29 +14,22 @@ const UserChemical = require('./models/UserChemical');
 const nodemailer = require('nodemailer');
 const OTP = require('./models/otp');
 const fs = require("fs");
-
+const ScrapChemical = require('./models/ScrapChemical');
+const NewChemicalRequest = require('./models/NewChemicalRequest');
 
 dotenv.config();
 const app = express();
 app.use(express.json());
-// app.use(cors({
-//     origin: 'https://indiumlabrecords.onrender.com/',
-//     // origin: 'http://localhost:3000',
+app.use(cors({
+    // origin: 'https://indiumlabrecords.onrender.com/',
+    origin: 'http://localhost:3000',
     
-//     methods: ['GET', 'POST', 'PUT', 'DELETE'],
-//     allowedHeaders: ['Content-Type', 'Authorization']
-// }));
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
 
-app.use((req, res, next) => {
-  res.setHeader('Access-Control-Allow-Origin', 'https://indiumlabrecords.onrender.com'); // No trailing slash
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  if (req.method === 'OPTIONS') {
-    return res.sendStatus(200); // Handle preflight
-  }
-  next();
-});
 // app.use(cors());
+
 mongoose.connect(process.env.MONGO_URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
@@ -62,11 +55,10 @@ transporter.verify((error, success) => {
       console.log('Email transporter is ready');
     }
     });
-
-app.get("/", (req, res) => {
-    res.send({ status: "Started" });
-});
     
+    app.get("/", (req, res) => {
+      res.send({ status: "Started" });
+  });
 
 const authenticate = (req, res, next) => {
     const token = req.headers.authorization?.split(' ')[1];
@@ -651,77 +643,77 @@ app.delete('/deleteChemical/:chemicalId', authenticate, async (req, res) => {
 
 
 
-app.post('/scrapRequest', authenticate, upload.single("scrapPhoto"), async (req, res) => {
-  try {
-    const { chemicalId } = req.body;
-    const scrapPhoto = req.file; // Uploaded file
+// app.post('/scrapRequest', authenticate, upload.single("scrapPhoto"), async (req, res) => {
+//   try {
+//     const { chemicalId } = req.body;
+//     const scrapPhoto = req.file; // Uploaded file
 
-    if (!chemicalId) return res.status(400).json({ error: 'Chemical ID required' });
-    if (!scrapPhoto) return res.status(400).json({ error: 'Photo upload required' });
+//     if (!chemicalId) return res.status(400).json({ error: 'Chemical ID required' });
+//     if (!scrapPhoto) return res.status(400).json({ error: 'Photo upload required' });
 
-    const chemical = await Chemical.findOne({ chemicalId });
-    if (!chemical) return res.status(404).json({ error: 'Chemical not found' });
+//     const chemical = await Chemical.findOne({ chemicalId });
+//     if (!chemical) return res.status(404).json({ error: 'Chemical not found' });
 
-    const user = await User.findById(req.user.id);
-    if (!user) return res.status(404).json({ error: 'User not found' });
+//     const user = await User.findById(req.user.id);
+//     if (!user) return res.status(404).json({ error: 'User not found' });
 
-    const mailOptions = {
-      from: process.env.EMAIL_USER,
-      to: `${process.env.ADMIN_EMAIL} ,  ${process.env.ADMIN_EMAIL1} , ${process.env.ADMIN_EMAIL2}  `,
-      subject: `Scrap Request Notification - Chemical ID: ${chemicalId}`,
-      html: `
-        <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-          <h2 style="color: #2c3e50;">Scrap Request Notification</h2>
-          <p>Dear Admin,</p>
-          <p>We have received a scrap request from one of our users. Please find the details below:</p>
+//     const mailOptions = {
+//       from: process.env.EMAIL_USER,
+//       to: `${process.env.ADMIN_EMAIL} ,  ${process.env.ADMIN_EMAIL1} , ${process.env.ADMIN_EMAIL2}  `,
+//       subject: `Scrap Request Notification - Chemical ID: ${chemicalId}`,
+//       html: `
+//         <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+//           <h2 style="color: #2c3e50;">Scrap Request Notification</h2>
+//           <p>Dear Admin,</p>
+//           <p>We have received a scrap request from one of our users. Please find the details below:</p>
           
-          <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
-            <tr style="background-color: #f2f2f2;">
-              <td style="padding: 10px; border: 1px solid #ddd;"><strong>User Name:</strong></td>
-              <td style="padding: 10px; border: 1px solid #ddd;">${user.name}</td>
-            </tr>
-            <tr>
-              <td style="padding: 10px; border: 1px solid #ddd;"><strong>Chemical ID:</strong></td>
-              <td style="padding: 10px; border: 1px solid #ddd;">${chemicalId}</td>
-            </tr>
-            <tr style="background-color: #f2f2f2;">
-              <td style="padding: 10px; border: 1px solid #ddd;"><strong>Chemical Name:</strong></td>
-              <td style="padding: 10px; border: 1px solid #ddd;">${chemical.chemicalName}</td>
-            </tr>
-            <tr>
-              <td style="padding: 10px; border: 1px solid #ddd;"><strong>Request Date:</strong></td>
-              <td style="padding: 10px; border: 1px solid #ddd;">${new Date().toLocaleDateString()}</td>
-            </tr>
-          </table>
+//           <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+//             <tr style="background-color: #f2f2f2;">
+//               <td style="padding: 10px; border: 1px solid #ddd;"><strong>User Name:</strong></td>
+//               <td style="padding: 10px; border: 1px solid #ddd;">${user.name}</td>
+//             </tr>
+//             <tr>
+//               <td style="padding: 10px; border: 1px solid #ddd;"><strong>Chemical ID:</strong></td>
+//               <td style="padding: 10px; border: 1px solid #ddd;">${chemicalId}</td>
+//             </tr>
+//             <tr style="background-color: #f2f2f2;">
+//               <td style="padding: 10px; border: 1px solid #ddd;"><strong>Chemical Name:</strong></td>
+//               <td style="padding: 10px; border: 1px solid #ddd;">${chemical.chemicalName}</td>
+//             </tr>
+//             <tr>
+//               <td style="padding: 10px; border: 1px solid #ddd;"><strong>Request Date:</strong></td>
+//               <td style="padding: 10px; border: 1px solid #ddd;">${new Date().toLocaleDateString()}</td>
+//             </tr>
+//           </table>
 
-          <p>An image related to this scrap request is attached for your review.</p>
-          <p>Please review this request at your earliest convenience and take appropriate action. If you need additional information, feel free to contact the user directly.</p>
+//           <p>An image related to this scrap request is attached for your review.</p>
+//           <p>Please review this request at your earliest convenience and take appropriate action. If you need additional information, feel free to contact the user directly.</p>
           
-          <p>Best regards,</p>
-          <p><strong>Chemical Management System</strong><br>
-          Automated Notification Service<br>
-          <a href="mailto:${process.env.EMAIL_USER}">${process.env.EMAIL_USER}</a></p>
+//           <p>Best regards,</p>
+//           <p><strong>Chemical Management System</strong><br>
+//           Automated Notification Service<br>
+//           <a href="mailto:${process.env.EMAIL_USER}">${process.env.EMAIL_USER}</a></p>
           
-          <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
-          <p style="font-size: 12px; color: #777;">This is an automated email. Please do not reply directly to this message.</p>
-        </div>
-      `,
-      attachments: [
-        {
-          filename: scrapPhoto.originalname,
-          path: scrapPhoto.path,
-        },
-      ],
-    };
+//           <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+//           <p style="font-size: 12px; color: #777;">This is an automated email. Please do not reply directly to this message.</p>
+//         </div>
+//       `,
+//       attachments: [
+//         {
+//           filename: scrapPhoto.originalname,
+//           path: scrapPhoto.path,
+//         },
+//       ],
+//     };
 
-    await transporter.sendMail(mailOptions);
-// Deletes the file after email is sent
-    res.status(200).json({ message: 'Scrap request with photo sent to admin successfully' });
-  } catch (error) {
-    console.error('Scrap Request Error:', error.message);
-    res.status(500).json({ error: 'Server Error', details: error.message });
-  }
-});
+//     await transporter.sendMail(mailOptions);
+// // Deletes the file after email is sent
+//     res.status(200).json({ message: 'Scrap request with photo sent to admin successfully' });
+//   } catch (error) {
+//     console.error('Scrap Request Error:', error.message);
+//     res.status(500).json({ error: 'Server Error', details: error.message });
+//   }
+// });
 
 // New Chemical Request Endpoint
 app.post('/newChemicalRequest', authenticate, async (req, res) => {
@@ -777,6 +769,393 @@ app.post('/newChemicalRequest', authenticate, async (req, res) => {
     res.status(500).json({ error: 'Server Error', details: error.message });
   }
 });
+
+
+
+// new  chemical request 
+
+app.post('/scrapRequest', authenticate, upload.single("scrapPhoto"), async (req, res) => {
+  try {
+    const { chemicalId } = req.body;
+    const scrapPhoto = req.file;
+
+    if (!chemicalId) return res.status(400).json({ error: 'Chemical ID required' });
+    if (!scrapPhoto) return res.status(400).json({ error: 'Photo upload required' });
+
+    const chemical = await Chemical.findOne({ chemicalId });
+    if (!chemical) return res.status(404).json({ error: 'Chemical not found' });
+
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    const approveToken = jwt.sign({ chemicalId, action: 'approve', userId: req.user.id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+    const denyToken = jwt.sign({ chemicalId, action: 'deny', userId: req.user.id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+
+    const approveLink = `${process.env.BASE_URL || 'https://indiumlabrecords.onrender.com'}/scrap/approve/${approveToken}`;
+    const denyLink = `${process.env.BASE_URL || 'https://indiumlabrecords.onrender.com'}/scrap/deny/${denyToken}`;
+
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: `${process.env.ADMIN_EMAIL}, ${process.env.ADMIN_EMAIL1}, ${process.env.ADMIN_EMAIL2}`,
+      subject: `Scrap Request Notification - Chemical ID: ${chemicalId}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+          <h2 style="color: #2c3e50;">Scrap Request Notification</h2>
+          <p>Dear Admin,</p>
+          <p>User ${user.name} has requested to scrap ${chemical.chemicalName} (ID: ${chemicalId}).</p>
+          <p>Please review the attached photo and take action:</p>
+          <a href="${approveLink}" style="padding: 10px 20px; background-color: #28a745; color: white; text-decoration: none; border-radius: 5px;">Approve</a>
+          <a href="${denyLink}" style="padding: 10px 20px; background-color: #dc3545; color: white; text-decoration: none; border-radius: 5px; margin-left: 10px;">Deny</a>
+        </div>
+      `,
+      attachments: [{
+        filename: scrapPhoto.originalname,
+        path: scrapPhoto.path,
+      }],
+    };
+
+    await transporter.sendMail(mailOptions);
+    fs.unlinkSync(scrapPhoto.path); // Delete the file after sending email
+    res.status(200).json({ message: 'Scrap request with photo sent to admin successfully' });
+  } catch (error) {
+    console.error('Scrap Request Error:', error.message);
+    res.status(500).json({ error: 'Server Error', details: error.message });
+  }
+});
+
+// app.get('/scrap/approve/:token', async (req, res) => {
+//   try {
+//     const { token } = req.params;
+//     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+//     if (decoded.action !== 'approve') return res.status(400).json({ error: 'Invalid token' });
+
+//     const { chemicalId, userId } = decoded;
+//     const chemical = await Chemical.findOne({ chemicalId });
+//     const user = await User.findById(userId);
+//     if (!chemical || !user) return res.status(404).json({ error: 'Chemical or user not found' });
+
+//     if (!ScrapChemical) throw new Error('ScrapChemical model not defined');
+//     const scrapChemical = new ScrapChemical({
+//       chemicalId,
+//       chemicalName: chemical.chemicalName,
+//       userName: user.name,
+//       date: new Date(),
+//       status: 'approved'
+//     });
+//     await scrapChemical.save();
+
+//     await Chemical.findOneAndDelete({ chemicalId }); // Optional deletion
+
+//     res.send('<h1>Scrap Request Approved</h1><p>The chemical has been marked as scrapped.</p>');
+//   } catch (error) {
+//     console.error('Scrap Approve Error:', error.message);
+//     res.status(500).send(`Server Error: ${error.message}`);
+//   }
+// });
+
+
+app.get('/scrap/approve/:token', async (req, res) => {
+  try {
+    const { token } = req.params;
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    if (decoded.action !== 'approve') return res.status(400).json({ error: 'Invalid token' });
+
+    const { chemicalId, userId } = decoded;
+    const chemical = await Chemical.findOne({ chemicalId });
+    const user = await User.findById(userId);
+    if (!chemical || !user) return res.status(404).json({ error: 'Chemical or user not found' });
+
+    const scrapChemical = new ScrapChemical({
+      chemicalId,
+      chemicalName: chemical.chemicalName,
+      userName: user.name,
+      date: new Date(),
+      status: 'approved'
+    });
+    await scrapChemical.save();
+
+    await Chemical.findOneAndDelete({ chemicalId }); // Optional: delete from inventory
+
+    res.send('<h1>Scrap Request Approved</h1><p>The chemical has been marked as scrapped.</p>');
+  } catch (error) {
+    console.error('Scrap Approve Error:', error.message);
+    res.status(500).send(`Server Error: ${error.message}`);
+  }
+});
+
+
+app.get('/getScrapChemicals', authenticate, async (req, res) => {
+  if (req.user.role !== 'admin') return res.status(403).json({ error: 'Unauthorized: Admins only' });
+  try {
+    const scrapChemicals = await ScrapChemical.find().lean();
+    res.json(scrapChemicals);
+  } catch (error) {
+    console.error('Get Scrap Chemicals Error:', error.message);
+    res.status(500).json({ error: 'Server Error', details: error.message });
+  }
+});
+
+
+app.get('/scrap/deny/:token', async (req, res) => {
+  try {
+    const { token } = req.params;
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    if (decoded.action !== 'deny') return res.status(400).json({ error: 'Invalid token' });
+
+    const { chemicalId, userId } = decoded;
+    const user = await User.findById(userId);
+    const chemical = await Chemical.findOne({ chemicalId });
+    if (!user || !chemical) return res.status(404).json({ error: 'User or chemical not found' });
+
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: user.email,
+      subject: 'Scrap Request Denied',
+      html: `<p>Your scrap request for ${chemical.chemicalName} (ID: ${chemicalId}) has been denied by the admin.</p>`,
+    };
+    await transporter.sendMail(mailOptions);
+
+    res.send('<h1>Scrap Request Denied</h1><p>The user has been notified.</p>');
+  } catch (error) {
+    console.error('Scrap Deny Error:', error.message);
+    res.status(500).send('Server Error');
+  }
+});
+
+
+app.post('/newChemicalRequest', authenticate, async (req, res) => {
+  try {
+    const { chemicalName } = req.body;
+    if (!chemicalName) return res.status(400).json({ error: 'Chemical name required' });
+
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    const approveToken = jwt.sign({ chemicalName, action: 'approve', userId: req.user.id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+    const denyToken = jwt.sign({ chemicalName, action: 'deny', userId: req.user.id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+
+    const approveLink = `${process.env.BASE_URL || 'https://indiumlabrecords.onrender.com'}/newChemical/approve/${approveToken}`;
+    const denyLink = `${process.env.BASE_URL || 'https://indiumlabrecords.onrender.com'}/newChemical/deny/${denyToken}`;
+
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: `${process.env.ADMIN_EMAIL}, ${process.env.ADMIN_EMAIL1}, ${process.env.ADMIN_EMAIL2}`,
+      subject: `New Chemical Request from ${user.name} - ${chemicalName}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+          <h2 style="color: #2c3e50;">New Chemical Request Notification</h2>
+          <p>Dear Admin,</p>
+          <p>User ${user.name} has requested a new chemical: ${chemicalName}.</p>
+          <a href="${approveLink}" style="padding: 10px 20px; background-color: #28a745; color: white; text-decoration: none; border-radius: 5px;">Approve</a>
+          <a href="${denyLink}" style="padding: 10px 20px; background-color: #dc3545; color: white; text-decoration: none; border-radius: 5px; margin-left: 10px;">Deny</a>
+        </div>
+      `,
+    };
+
+    await transporter.sendMail(mailOptions);
+    res.status(200).json({ message: 'New chemical request sent to admin successfully' });
+  } catch (error) {
+    console.error('New Chemical Request Error:', error.message);
+    res.status(500).json({ error: 'Server Error', details: error.message });
+  }
+});
+
+
+
+// app.post('/scrapRequest', authenticate, async (req, res) => {
+//   try {
+//     const { chemicalId } = req.body;
+//     const user = await User.findById(req.user.id);
+//     if (!user) return res.status(404).json({ error: 'User not found' });
+
+//     const chemical = await Chemical.findOne({ chemicalId });
+//     if (!chemical) return res.status(404).json({ error: 'Chemical not found' });
+
+//     // Generate unique tokens for Approve and Deny actions
+//     const approveToken = jwt.sign({ chemicalId, action: 'approve', userId: req.user.id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+//     const denyToken = jwt.sign({ chemicalId, action: 'deny', userId: req.user.id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+
+//     const approveLink = `http://localhost:5000/scrap/approve/${approveToken}`;
+//     const denyLink = `http://localhost:5000/scrap/deny/${denyToken}`;
+
+//     const mailOptions = {
+//       from: process.env.EMAIL_USER,
+//       to: process.env.ADMIN_EMAIL, // Add admin email to .env
+//       subject: `Scrap Request for ${chemical.chemicalName} by ${user.name}`,
+//       html: `
+//         <p>User ${user.name} has requested to scrap ${chemical.chemicalName} (ID: ${chemicalId}).</p>
+//         <a href="${approveLink}" style="padding: 10px; background-color: #28a745; color: white; text-decoration: none;">Approve</a>
+//         <a href="${denyLink}" style="padding: 10px; background-color: #dc3545; color: white; text-decoration: none; margin-left: 10px;">Deny</a>
+//       `,
+//     };
+
+//     await transporter.sendMail(mailOptions);
+//     res.status(200).json({ message: 'Scrap request sent to admin' });
+//   } catch (error) {
+//     console.error('Scrap Request Error:', error.message);
+//     res.status(500).json({ error: 'Server Error', details: error.message });
+//   }
+// });
+
+// // Approve Scrap Request
+// app.get('/scrap/approve/:token', async (req, res) => {
+//   try {
+//     const { token } = req.params;
+//     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+//     if (decoded.action !== 'approve') return res.status(400).json({ error: 'Invalid token' });
+
+//     const { chemicalId, userId } = decoded;
+//     const chemical = await Chemical.findOne({ chemicalId });
+//     const user = await User.findById(userId);
+//     if (!chemical || !user) return res.status(404).json({ error: 'Chemical or user not found' });
+
+//     const scrapChemical = new ScrapChemical({
+//       chemicalId,
+//       chemicalName: chemical.chemicalName,
+//       userName: user.name,
+//       date: new Date(),
+//     });
+//     await scrapChemical.save();
+
+//     res.send('<h1>Scrap Request Approved</h1><p>The request has been recorded.</p>');
+//   } catch (error) {
+//     console.error('Scrap Approve Error:', error.message);
+//     res.status(500).send('Server Error');
+//   }
+// });
+
+// // Deny Scrap Request
+// app.get('/scrap/deny/:token', async (req, res) => {
+//   try {
+//     const { token } = req.params;
+//     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+//     if (decoded.action !== 'deny') return res.status(400).json({ error: 'Invalid token' });
+
+//     const { userId } = decoded;
+//     const user = await User.findById(userId);
+//     if (!user) return res.status(404).json({ error: 'User not found' });
+
+//     const mailOptions = {
+//       from: process.env.EMAIL_USER,
+//       to: user.email,
+//       subject: 'Scrap Request Denied',
+//       html: `<p>Your scrap request has been denied by the admin.</p>`,
+//     };
+//     await transporter.sendMail(mailOptions);
+
+//     res.send('<h1>Scrap Request Denied</h1><p>The user has been notified.</p>');
+//   } catch (error) {
+//     console.error('Scrap Deny Error:', error.message);
+//     res.status(500).send('Server Error');
+//   }
+// });
+
+// // New Chemical Request Route
+// app.post('/newChemicalRequest', authenticate, async (req, res) => {
+//   try {
+//     const { chemicalName } = req.body;
+//     const user = await User.findById(req.user.id);
+//     if (!user) return res.status(404).json({ error: 'User not found' });
+
+//     const approveToken = jwt.sign({ chemicalName, action: 'approve', userId: req.user.id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+//     const denyToken = jwt.sign({ chemicalName, action: 'deny', userId: req.user.id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+
+//     const approveLink = `http://localhost:5000/newChemical/approve/${approveToken}`;
+//     const denyLink = `http://localhost:5000/newChemical/deny/${denyToken}`;
+
+//     const mailOptions = {
+//       from: process.env.EMAIL_USER,
+//       to: process.env.ADMIN_EMAIL,
+//       subject: `New Chemical Request: ${chemicalName} by ${user.name}`,
+//       html: `
+//         <p>User ${user.name} has requested a new chemical: ${chemicalName}.</p>
+//         <a href="${approveLink}" style="padding: 10px; background-color: #28a745; color: white; text-decoration: none;">Approve</a>
+//         <a href="${denyLink}" style="padding: 10px; background-color: #dc3545; color: white; text-decoration: none; margin-left: 10px;">Deny</a>
+//       `,
+//     };
+
+//     await transporter.sendMail(mailOptions);
+//     res.status(200).json({ message: 'New chemical request sent to admin' });
+//   } catch (error) {
+//     console.error('New Chemical Request Error:', error.message);
+//     res.status(500).json({ error: 'Server Error', details: error.message });
+//   }
+// });
+
+// // Approve New Chemical Request
+// app.get('/newChemical/approve/:token', async (req, res) => {
+//   try {
+//     const { token } = req.params;
+//     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+//     if (decoded.action !== 'approve') return res.status(400).json({ error: 'Invalid token' });
+
+//     const { chemicalName, userId } = decoded;
+//     const user = await User.findById(userId);
+//     if (!user) return res.status(404).json({ error: 'User not found' });
+
+//     const newChemicalRequest = new NewChemicalRequest({
+//       chemicalName,
+//       userName: user.name,
+//       date: new Date(),
+//     });
+//     await newChemicalRequest.save();
+
+//     res.send('<h1>New Chemical Request Approved</h1><p>The request has been recorded.</p>');
+//   } catch (error) {
+//     console.error('New Chemical Approve Error:', error.message);
+//     res.status(500).send('Server Error');
+//   }
+// });
+
+// // Deny New Chemical Request
+// app.get('/newChemical/deny/:token', async (req, res) => {
+//   try {
+//     const { token } = req.params;
+//     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+//     if (decoded.action !== 'deny') return res.status(400).json({ error: 'Invalid token' });
+
+//     const { chemicalName, userId } = decoded;
+//     const user = await User.findById(userId);
+//     if (!user) return res.status(404).json({ error: 'User not found' });
+
+//     const mailOptions = {
+//       from: process.env.EMAIL_USER,
+//       to: user.email,
+//       subject: 'New Chemical Request Denied',
+//       html: `<p>Your request for ${chemicalName} has been denied by the admin.</p>`,
+//     };
+//     await transporter.sendMail(mailOptions);
+
+//     res.send('<h1>New Chemical Request Denied</h1><p>The user has been notified.</p>');
+//   } catch (error) {
+//     console.error('New Chemical Deny Error:', error.message);
+//     res.status(500).send('Server Error');
+//   }
+// });
+
+// // Fetch Scrap Chemicals (for Excel download)
+// app.get('/getScrapChemicals', authenticate, async (req, res) => {
+//   if (req.user.role !== 'admin') return res.status(403).json({ error: 'Unauthorized: Admins only' });
+//   try {
+//     const scrapChemicals = await ScrapChemical.find().lean();
+//     res.json(scrapChemicals);
+//   } catch (error) {
+//     console.error('Get Scrap Chemicals Error:', error.message);
+//     res.status(500).json({ error: 'Server Error', details: error.message });
+//   }
+// });
+
+// // Fetch New Chemical Requests (for Excel download)
+// app.get('/getNewChemicalRequests', authenticate, async (req, res) => {
+//   if (req.user.role !== 'admin') return res.status(403).json({ error: 'Unauthorized: Admins only' });
+//   try {
+//     const newChemicalRequests = await NewChemicalRequest.find().lean();
+//     res.json(newChemicalRequests);
+//   } catch (error) {
+//     console.error('Get New Chemical Requests Error:', error.message);
+//     res.status(500).json({ error: 'Server Error', details: error.message });
+//   }
+// });
 
 
 const PORT = process.env.PORT || 5000;
