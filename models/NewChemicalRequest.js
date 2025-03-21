@@ -1,10 +1,13 @@
 const mongoose = require('mongoose');
 
+// Define the NewChemicalRequest schema (if not already defined)
 const newChemicalRequestSchema = new mongoose.Schema({
-  chemicalName: { type: String, required: true },
-  userName: { type: String, required: true },
-  date: { type: Date, default: Date.now },
-  status: { type: String, enum: ['pending', 'approved', 'denied'], default: 'approved' }
+  chemicalName: String,
+  userName: String,
+  userId: mongoose.Schema.Types.ObjectId,
+  date: Date,
+  status: { type: String, default: 'pending' },
 });
+const NewChemicalRequest = mongoose.model('NewChemicalRequest', newChemicalRequestSchema);
 
-module.exports = mongoose.model('NewChemicalRequest', newChemicalRequestSchema);
+module.exports = NewChemicalRequest;
