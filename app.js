@@ -16,8 +16,10 @@ const OTP = require('./models/otp');
 const fs = require("fs");
 const ScrapChemical = require('./models/ScrapChemical');
 const NewChemicalRequest = require('./models/NewChemicalRequest');
+const axios = require('axios');
 
 const API_URL = 'https://labrecordsbackend.onrender.com';
+// const API_URL = 'http://localhost:5000';
 dotenv.config();
 const app = express();
 app.use(express.json());
@@ -104,25 +106,61 @@ app.post('/register', async (req, res) => {
 });
 
 // User Login
+// app.post('/login', async (req, res) => {
+//     try {
+//         const { email, password } = req.body;
+//         const user = await User.findOne({ email });
+//         if (!user) return res.status(400).json({ error: 'User not found' });
+
+//         const isMatch = await bcrypt.compare(password, user.password);
+//         if (!isMatch) return res.status(400).json({ error: 'Invalid credentials' });
+
+//         const token = jwt.sign(
+//             { id: user._id, name: user.name, role: user.role },
+//             process.env.JWT_SECRET,
+//             { expiresIn: '1h' }
+//         );
+//         res.json({ token, role: user.role });
+//     } catch (error) {
+//         console.error('Login Error:', error.message);
+//         res.status(500).json({ error: 'Server Error', details: error.message });
+//     }
+// });
+
 app.post('/login', async (req, res) => {
-    try {
-        const { email, password } = req.body;
-        const user = await User.findOne({ email });
-        if (!user) return res.status(400).json({ error: 'User not found' });
+  try {
+      const { email, password, captcha } = req.body;
 
-        const isMatch = await bcrypt.compare(password, user.password);
-        if (!isMatch) return res.status(400).json({ error: 'Invalid credentials' });
+      // Verify reCAPTCHA
+      if (!captcha) {
+          return res.status(400).json({ error: 'CAPTCHA is required' });
+      }
 
-        const token = jwt.sign(
-            { id: user._id, name: user.name, role: user.role },
-            process.env.JWT_SECRET,
-            { expiresIn: '1h' }
-        );
-        res.json({ token, role: user.role });
-    } catch (error) {
-        console.error('Login Error:', error.message);
-        res.status(500).json({ error: 'Server Error', details: error.message });
-    }
+      const verificationURL = `https://www.google.com/recaptcha/api/siteverify?secret=${process.env.RECAPTCHA_SECRET_KEY}&response=${captcha}`;
+      const verificationResponse = await axios.post(verificationURL);
+
+      if (!verificationResponse.data.success) {
+          console.error('reCAPTCHA verification failed:', verificationResponse.data);
+          return res.status(400).json({ error: 'CAPTCHA verification failed' });
+      }
+
+      // Proceed with authentication
+      const user = await User.findOne({ email });
+      if (!user) return res.status(400).json({ error: 'User not found' });
+
+      const isMatch = await bcrypt.compare(password, user.password);
+      if (!isMatch) return res.status(400).json({ error: 'Invalid credentials' });
+
+      const token = jwt.sign(
+          { id: user._id, name: user.name, role: user.role },
+          process.env.JWT_SECRET,
+          { expiresIn: '1h' }
+      );
+      res.json({ token, role: user.role });
+  } catch (error) {
+      console.error('Login Error:', error.message);
+      res.status(500).json({ error: 'Server Error', details: error.message });
+  }
 });
 
 // Forgot Password
@@ -1370,201 +1408,6 @@ app.get('/newChemical/deny/:token', async (req, res) => {
   }
 });
 
-
-// app.post('/scrapRequest', authenticate, async (req, res) => {
-//   try {
-//     const { chemicalId } = req.body;
-//     const user = await User.findById(req.user.id);
-//     if (!user) return res.status(404).json({ error: 'User not found' });
-
-//     const chemical = await Chemical.findOne({ chemicalId });
-//     if (!chemical) return res.status(404).json({ error: 'Chemical not found' });
-
-//     // Generate unique tokens for Approve and Deny actions
-//     const approveToken = jwt.sign({ chemicalId, action: 'approve', userId: req.user.id }, process.env.JWT_SECRET, { expiresIn: '7d' });
-//     const denyToken = jwt.sign({ chemicalId, action: 'deny', userId: req.user.id }, process.env.JWT_SECRET, { expiresIn: '7d' });
-
-//     const approveLink = `http://localhost:5000/scrap/approve/${approveToken}`;
-//     const denyLink = `http://localhost:5000/scrap/deny/${denyToken}`;
-
-//     const mailOptions = {
-//       from: process.env.EMAIL_USER,
-//       to: process.env.ADMIN_EMAIL, // Add admin email to .env
-//       subject: `Scrap Request for ${chemical.chemicalName} by ${user.name}`,
-//       html: `
-//         <p>User ${user.name} has requested to scrap ${chemical.chemicalName} (ID: ${chemicalId}).</p>
-//         <a href="${approveLink}" style="padding: 10px; background-color: #28a745; color: white; text-decoration: none;">Approve</a>
-//         <a href="${denyLink}" style="padding: 10px; background-color: #dc3545; color: white; text-decoration: none; margin-left: 10px;">Deny</a>
-//       `,
-//     };
-
-//     await transporter.sendMail(mailOptions);
-//     res.status(200).json({ message: 'Scrap request sent to admin' });
-//   } catch (error) {
-//     console.error('Scrap Request Error:', error.message);
-//     res.status(500).json({ error: 'Server Error', details: error.message });
-//   }
-// });
-
-// // Approve Scrap Request
-// app.get('/scrap/approve/:token', async (req, res) => {
-//   try {
-//     const { token } = req.params;
-//     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-//     if (decoded.action !== 'approve') return res.status(400).json({ error: 'Invalid token' });
-
-//     const { chemicalId, userId } = decoded;
-//     const chemical = await Chemical.findOne({ chemicalId });
-//     const user = await User.findById(userId);
-//     if (!chemical || !user) return res.status(404).json({ error: 'Chemical or user not found' });
-
-//     const scrapChemical = new ScrapChemical({
-//       chemicalId,
-//       chemicalName: chemical.chemicalName,
-//       userName: user.name,
-//       date: new Date(),
-//     });
-//     await scrapChemical.save();
-
-//     res.send('<h1>Scrap Request Approved</h1><p>The request has been recorded.</p>');
-//   } catch (error) {
-//     console.error('Scrap Approve Error:', error.message);
-//     res.status(500).send('Server Error');
-//   }
-// });
-
-// // Deny Scrap Request
-// app.get('/scrap/deny/:token', async (req, res) => {
-//   try {
-//     const { token } = req.params;
-//     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-//     if (decoded.action !== 'deny') return res.status(400).json({ error: 'Invalid token' });
-
-//     const { userId } = decoded;
-//     const user = await User.findById(userId);
-//     if (!user) return res.status(404).json({ error: 'User not found' });
-
-//     const mailOptions = {
-//       from: process.env.EMAIL_USER,
-//       to: user.email,
-//       subject: 'Scrap Request Denied',
-//       html: `<p>Your scrap request has been denied by the admin.</p>`,
-//     };
-//     await transporter.sendMail(mailOptions);
-
-//     res.send('<h1>Scrap Request Denied</h1><p>The user has been notified.</p>');
-//   } catch (error) {
-//     console.error('Scrap Deny Error:', error.message);
-//     res.status(500).send('Server Error');
-//   }
-// });
-
-// // New Chemical Request Route
-// app.post('/newChemicalRequest', authenticate, async (req, res) => {
-//   try {
-//     const { chemicalName } = req.body;
-//     const user = await User.findById(req.user.id);
-//     if (!user) return res.status(404).json({ error: 'User not found' });
-
-//     const approveToken = jwt.sign({ chemicalName, action: 'approve', userId: req.user.id }, process.env.JWT_SECRET, { expiresIn: '7d' });
-//     const denyToken = jwt.sign({ chemicalName, action: 'deny', userId: req.user.id }, process.env.JWT_SECRET, { expiresIn: '7d' });
-
-//     const approveLink = `http://localhost:5000/newChemical/approve/${approveToken}`;
-//     const denyLink = `http://localhost:5000/newChemical/deny/${denyToken}`;
-
-//     const mailOptions = {
-//       from: process.env.EMAIL_USER,
-//       to: process.env.ADMIN_EMAIL,
-//       subject: `New Chemical Request: ${chemicalName} by ${user.name}`,
-//       html: `
-//         <p>User ${user.name} has requested a new chemical: ${chemicalName}.</p>
-//         <a href="${approveLink}" style="padding: 10px; background-color: #28a745; color: white; text-decoration: none;">Approve</a>
-//         <a href="${denyLink}" style="padding: 10px; background-color: #dc3545; color: white; text-decoration: none; margin-left: 10px;">Deny</a>
-//       `,
-//     };
-
-//     await transporter.sendMail(mailOptions);
-//     res.status(200).json({ message: 'New chemical request sent to admin' });
-//   } catch (error) {
-//     console.error('New Chemical Request Error:', error.message);
-//     res.status(500).json({ error: 'Server Error', details: error.message });
-//   }
-// });
-
-// // Approve New Chemical Request
-// app.get('/newChemical/approve/:token', async (req, res) => {
-//   try {
-//     const { token } = req.params;
-//     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-//     if (decoded.action !== 'approve') return res.status(400).json({ error: 'Invalid token' });
-
-//     const { chemicalName, userId } = decoded;
-//     const user = await User.findById(userId);
-//     if (!user) return res.status(404).json({ error: 'User not found' });
-
-//     const newChemicalRequest = new NewChemicalRequest({
-//       chemicalName,
-//       userName: user.name,
-//       date: new Date(),
-//     });
-//     await newChemicalRequest.save();
-
-//     res.send('<h1>New Chemical Request Approved</h1><p>The request has been recorded.</p>');
-//   } catch (error) {
-//     console.error('New Chemical Approve Error:', error.message);
-//     res.status(500).send('Server Error');
-//   }
-// });
-
-// // Deny New Chemical Request
-// app.get('/newChemical/deny/:token', async (req, res) => {
-//   try {
-//     const { token } = req.params;
-//     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-//     if (decoded.action !== 'deny') return res.status(400).json({ error: 'Invalid token' });
-
-//     const { chemicalName, userId } = decoded;
-//     const user = await User.findById(userId);
-//     if (!user) return res.status(404).json({ error: 'User not found' });
-
-//     const mailOptions = {
-//       from: process.env.EMAIL_USER,
-//       to: user.email,
-//       subject: 'New Chemical Request Denied',
-//       html: `<p>Your request for ${chemicalName} has been denied by the admin.</p>`,
-//     };
-//     await transporter.sendMail(mailOptions);
-
-//     res.send('<h1>New Chemical Request Denied</h1><p>The user has been notified.</p>');
-//   } catch (error) {
-//     console.error('New Chemical Deny Error:', error.message);
-//     res.status(500).send('Server Error');
-//   }
-// });
-
-// // Fetch Scrap Chemicals (for Excel download)
-// app.get('/getScrapChemicals', authenticate, async (req, res) => {
-//   if (req.user.role !== 'admin') return res.status(403).json({ error: 'Unauthorized: Admins only' });
-//   try {
-//     const scrapChemicals = await ScrapChemical.find().lean();
-//     res.json(scrapChemicals);
-//   } catch (error) {
-//     console.error('Get Scrap Chemicals Error:', error.message);
-//     res.status(500).json({ error: 'Server Error', details: error.message });
-//   }
-// });
-
-// // Fetch New Chemical Requests (for Excel download)
-// app.get('/getNewChemicalRequests', authenticate, async (req, res) => {
-//   if (req.user.role !== 'admin') return res.status(403).json({ error: 'Unauthorized: Admins only' });
-//   try {
-//     const newChemicalRequests = await NewChemicalRequest.find().lean();
-//     res.json(newChemicalRequests);
-//   } catch (error) {
-//     console.error('Get New Chemical Requests Error:', error.message);
-//     res.status(500).json({ error: 'Server Error', details: error.message });
-//   }
-// });
 
 
 const PORT = process.env.PORT || 5000;
