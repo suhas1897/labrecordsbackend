@@ -18,14 +18,14 @@ const ScrapChemical = require('./models/ScrapChemical');
 const NewChemicalRequest = require('./models/NewChemicalRequest');
 const axios = require('axios');
 
-// const API_URL = 'https://labrecordsbackend.onrender.com';
-const API_URL = 'http://localhost:5000';
+const API_URL = 'https://labrecordsbackend.onrender.com';
+// const API_URL = 'http://localhost:5000';
 dotenv.config();
 const app = express();
 app.use(express.json());
 app.use(cors({
-    // origin: 'https://indiumlabrecords.onrender.com',
-    origin: 'http://localhost:3000',
+    origin: 'https://indiumlabrecords.onrender.com',
+    // origin: 'http://localhost:3000',
     
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization']
