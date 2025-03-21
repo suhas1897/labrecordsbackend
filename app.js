@@ -18,14 +18,14 @@ const ScrapChemical = require('./models/ScrapChemical');
 const NewChemicalRequest = require('./models/NewChemicalRequest');
 const axios = require('axios');
 
-const API_URL = 'https://labrecordsbackend.onrender.com';
-// const API_URL = 'http://localhost:5000';
+// const API_URL = 'https://labrecordsbackend.onrender.com';
+const API_URL = 'http://localhost:5000';
 dotenv.config();
 const app = express();
 app.use(express.json());
 app.use(cors({
-    origin: 'https://indiumlabrecords.onrender.com',
-    // origin: 'http://localhost:3000',
+    // origin: 'https://indiumlabrecords.onrender.com',
+    origin: 'http://localhost:3000',
     
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization']
@@ -523,29 +523,96 @@ app.get('/getUserDetails', authenticate, async (req, res) => {
 // ... (previous imports and middleware remain unchanged)
 
 // Update Chemical Endpoint
+// app.put('/updateChemical/:chemicalId', authenticate, async (req, res) => {
+//   if (req.user.role !== 'admin') return res.status(403).json({ error: 'Unauthorized: Admins only' });
+//   try {
+//     const { chemicalId } = req.params;
+//     const { gramsAvailable, dateOfMFG, dateOfExp, purchase, purchaseDate } = req.body;
+//     console.log(`[PUT] Request received for chemicalId: "${chemicalId}" (length: ${chemicalId.length})`);
+//     console.log(`[PUT] Request body: ${JSON.stringify(req.body)}`);
+
+//     const trimmedChemicalId = chemicalId.trim();
+//     console.log(`[PUT] Trimmed chemicalId: "${trimmedChemicalId}"`);
+
+//     const allChemicals = await Chemical.find({}, 'chemicalId');
+//     console.log(`[PUT] All chemical IDs in DB: ${JSON.stringify(allChemicals.map(c => c.chemicalId))}`);
+
+//     const chemical = await Chemical.findOne({ chemicalId: trimmedChemicalId });
+//     if (!chemical) {
+//       console.log(`[PUT] No chemical found with chemicalId: "${trimmedChemicalId}"`);
+//       return res.status(404).json({ error: `Chemical with ID "${trimmedChemicalId}" not found` });
+//     }
+//     console.log(`[PUT] Found chemical: ${JSON.stringify(chemical)}`);
+
+//     if (gramsAvailable === undefined || !dateOfMFG || !dateOfExp) {
+//       return res.status(400).json({ error: 'Missing required fields (gramsAvailable, dateOfMFG, dateOfExp)' });
+//     }
+
+//     const grams = parseFloat(gramsAvailable);
+//     if (isNaN(grams) || grams < 0) {
+//       return res.status(400).json({ error: 'Invalid gramsAvailable value' });
+//     }
+
+//     const mfgDate = new Date(dateOfMFG);
+//     const expDate = new Date(dateOfExp);
+//     if (isNaN(mfgDate.getTime()) || isNaN(expDate.getTime())) {
+//       return res.status(400).json({ error: 'Invalid date format for dateOfMFG or dateOfExp' });
+//     }
+
+//     const purchaseValue = purchase !== undefined ? parseFloat(purchase) : undefined;
+//     if (purchaseValue !== undefined && (isNaN(purchaseValue) || purchaseValue < 0)) {
+//       return res.status(400).json({ error: 'Invalid purchase value' });
+//     }
+
+//     const purchaseDateValue = purchaseDate ? new Date(purchaseDate) : undefined;
+//     if (purchaseDate && isNaN(purchaseDateValue.getTime())) {
+//       return res.status(400).json({ error: 'Invalid date format for purchaseDate' });
+//     }
+
+//     const updatedChemical = await Chemical.findOneAndUpdate(
+//       { chemicalId: trimmedChemicalId },
+//       {
+//         gramsAvailable: grams,
+//         dateOfMFG: mfgDate,
+//         dateOfExp: expDate,
+//         ...(purchaseValue !== undefined && { purchase: purchaseValue }),
+//         ...(purchaseDateValue && { purchaseDate: purchaseDateValue }), // Update purchaseDate if provided
+//       },
+//       { new: true, runValidators: true }
+//     );
+
+//     console.log(`[PUT] Updated chemical: ${JSON.stringify(updatedChemical)}`);
+//     res.json({ message: 'Chemical updated successfully', chemical: updatedChemical });
+//   } catch (error) {
+//     console.error('[PUT] Error updating chemical:', {
+//       chemicalId: req.params.chemicalId,
+//       requestBody: req.body,
+//       message: error.message,
+//       stack: error.stack,
+//     });
+//     res.status(500).json({ error: 'Server Error', details: error.message });
+//   }
+// });
+
+
 app.put('/updateChemical/:chemicalId', authenticate, async (req, res) => {
   if (req.user.role !== 'admin') return res.status(403).json({ error: 'Unauthorized: Admins only' });
   try {
     const { chemicalId } = req.params;
-    const { gramsAvailable, dateOfMFG, dateOfExp, purchase, purchaseDate } = req.body;
-    console.log(`[PUT] Request received for chemicalId: "${chemicalId}" (length: ${chemicalId.length})`);
+    const { chemicalName, gramsAvailable, dateOfMFG, dateOfExp, purchase, purchaseDate, invoiceNumber, isAbsolute, isApproximately, rack } = req.body;
+
+    console.log(`[PUT] Request received for chemicalId: "${chemicalId}"`);
     console.log(`[PUT] Request body: ${JSON.stringify(req.body)}`);
 
     const trimmedChemicalId = chemicalId.trim();
-    console.log(`[PUT] Trimmed chemicalId: "${trimmedChemicalId}"`);
-
-    const allChemicals = await Chemical.find({}, 'chemicalId');
-    console.log(`[PUT] All chemical IDs in DB: ${JSON.stringify(allChemicals.map(c => c.chemicalId))}`);
-
     const chemical = await Chemical.findOne({ chemicalId: trimmedChemicalId });
     if (!chemical) {
       console.log(`[PUT] No chemical found with chemicalId: "${trimmedChemicalId}"`);
       return res.status(404).json({ error: `Chemical with ID "${trimmedChemicalId}" not found` });
     }
-    console.log(`[PUT] Found chemical: ${JSON.stringify(chemical)}`);
 
-    if (gramsAvailable === undefined || !dateOfMFG || !dateOfExp) {
-      return res.status(400).json({ error: 'Missing required fields (gramsAvailable, dateOfMFG, dateOfExp)' });
+    if (gramsAvailable === undefined || !dateOfMFG || !dateOfExp || !chemicalName || !rack) {
+      return res.status(400).json({ error: 'Missing required fields (chemicalName, gramsAvailable, dateOfMFG, dateOfExp, rack)' });
     }
 
     const grams = parseFloat(gramsAvailable);
@@ -572,11 +639,16 @@ app.put('/updateChemical/:chemicalId', authenticate, async (req, res) => {
     const updatedChemical = await Chemical.findOneAndUpdate(
       { chemicalId: trimmedChemicalId },
       {
+        chemicalName: chemicalName.toUpperCase(),
         gramsAvailable: grams,
         dateOfMFG: mfgDate,
         dateOfExp: expDate,
         ...(purchaseValue !== undefined && { purchase: purchaseValue }),
-        ...(purchaseDateValue && { purchaseDate: purchaseDateValue }), // Update purchaseDate if provided
+        ...(purchaseDateValue && { purchaseDate: purchaseDateValue }),
+        invoiceNumber: invoiceNumber || chemical.invoiceNumber,
+        isAbsolute: isAbsolute || false,
+        isApproximately: isApproximately || false,
+        rack
       },
       { new: true, runValidators: true }
     );
