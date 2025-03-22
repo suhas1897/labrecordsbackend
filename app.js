@@ -2245,7 +2245,7 @@ app.get('/scrap/super-approve/:token', async (req, res) => {
     if (!scrapRequest) return res.status(404).json({ error: 'Scrap request not found' });
 
     // Move to ScrapChemical collection and delete from Chemical
-    const scrapChemical = new ScrapChemical({
+    const scrapChemical = new ScrapRequest({
       chemicalId,
       chemicalName: chemical.chemicalName,
       userName: user.name,
@@ -2493,7 +2493,7 @@ app.get('/scrap/super-deny/:token', async (req, res) => {
 app.get('/getScrapChemicals', authenticate, async (req, res) => {
   if (req.user.role !== 'admin' && req.user.role !== 'superadmin') return res.status(403).json({ error: 'Unauthorized: Admins only' });
   try {
-    const scrapChemicals = await ScrapChemical.find().lean();
+    const scrapChemicals = await ScrapRequest.find().lean();
     res.json(scrapChemicals);
   } catch (error) {
     console.error('Get Scrap Chemicals Error:', error.message);
