@@ -1862,7 +1862,73 @@ app.post('/scrapRequest', authenticate, upload.single("scrapPhoto"), async (req,
       from: process.env.EMAIL_USER,
       to: adminEmails,
       subject: `Scrap Request Notification for ${chemical.chemicalName}`,
-      html: `<p>Review the scrap request for ${chemical.chemicalName} by ${user.name}. <a href="${approveLink}">Approve</a> | <a href="${denyLink}">Deny</a></p>`, // Simplified for brevity
+      html: `<div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 25px; background-color: rgb(255, 255, 255); border-radius: 10px; box-shadow: 0 4px 12px rgb(228, 228, 228);">
+  <!-- Logo Header -->
+  <div style="text-align: center; margin-bottom: 25px;">
+    <img src="https://res.cloudinary.com/dcggiwav8/image/upload/v1742631887/Alchemira/dowh0fklo7hp9zc4iatt.png" alt="Alchemiera Logo" style="width: 200px; height: auto;" />
+  </div>
+
+  <!-- Title -->
+  <h2 style="color: #003d36; font-size: 24px; margin: 0 0 20px; font-weight: 600; text-align: center;">Scrap Request Notification</h2>
+
+  <!-- Greeting and Intro -->
+  <p style="font-size: 15px; margin: 0 0 10px; color: #444;">Dear Admin,</p>
+  <p style="font-size: 15px; margin: 0 0 25px; color: #444;">A scrap request has been submitted for your review:</p>
+
+  <!-- Details Table -->
+  <table style="width: 100%; border-collapse: separate; border-spacing: 0; margin: 0 0 25px; background-color: #007367; border-radius: 10px; box-shadow: 0 1px 3px rgba(255, 255, 255, 0.28);">
+    <tr style="background-color: #007367;">
+      <td style="padding: 12px 15px; font-weight: 600; font-size: 14px; width: 40%; border-bottom: 1px solid #f0e0c1; color: #f0e0c1;">User Name</td>
+      <td style="padding: 12px 15px; font-size: 14px; border-bottom: 1px solid #f0e0c1; color: #f0e0c1;">${user.name}</td>
+    </tr>
+    <tr style="background-color: #007367;">
+      <td style="padding: 12px 15px; font-weight: 600; font-size: 14px; width: 40%; border-bottom: 1px solid #f0e0c1; color: #f0e0c1;">Chemical Name</td>
+      <td style="padding: 12px 15px; font-size: 14px; border-bottom: 1px solid #f0e0c1; color: #f0e0c1;">${chemical.chemicalName}</td>
+    </tr>
+    <tr style="background-color: #007367;">
+      <td style="padding: 12px 15px; font-weight: 600; font-size: 14px; width: 40%; border-bottom: 1px solid #f0e0c1; color: #f0e0c1;">Request Date</td>
+      <td style="padding: 12px 15px; font-size: 14px; border-bottom: 1px solid #f0e0c1; color: #f0e0c1;">${new Date().toLocaleDateString()}</td>
+    </tr>
+  </table>
+
+  <!-- Action Prompt -->
+  <p style="font-size: 15px; margin: 0 0 20px; color: #444;">Please review the scrap request for <strong>${chemical.chemicalName}</strong> by <strong>${user.name}</strong> and take action using the options below:</p>
+  <div style="text-align: center; margin: 0 0 25px;">
+    <a href="${approveLink}" 
+       style="display: inline-block; padding: 12px 28px; background-color: #2ecc71; color: #ffffff; text-decoration: none; border-radius: 6px; font-size: 14px; font-weight: 500; margin: 0 8px; transition: background-color 0.3s;">
+      Approve
+    </a>
+    <a href="${denyLink}" 
+       style="display: inline-block; padding: 12px 28px; background-color: #e74c3c; color: #ffffff; text-decoration: none; border-radius: 6px; font-size: 14px; font-weight: 500; margin: 0 8px; transition: background-color 0.3s;">
+      Deny
+    </a>
+  </div>
+
+  <!-- Alternative Action -->
+  <p style="font-size: 15px; margin: 0 0 25px; color: #444;">Alternatively, you may manage this request via the <a href="${baseUrl}/dashboard" style="color: #2980b9; text-decoration: none; font-weight: 500;">CIMS Dashboard</a>.</p>
+
+  <!-- Footer -->
+  <div style="text-align: left; border-top: 1px solid #003d36; padding-top: 20px; margin-top: 20px;">
+    <p style="font-size: 14px; margin: 0 0 5px; color: #555;">Best regards,</p>
+    <p style="font-size: 15px; margin: 0 0 5px; font-weight: 600; color: #333;">Admin</p>
+    <p style="font-size: 16px; margin: 0 0 8px; font-weight: 600; color: #f0e0c1;">CIMS – Chemical Inventory Management System</p>
+    <p style="font-size: 13px; margin: 0 0 5px; color: #666;">Powered by Alchemiera Bioelectronics India Private Limited</p>
+    <p style="font-size: 13px; margin: 0 0 5px; color: #666;">
+      📧 <a href="mailto:alchemierabioelectronics@gmail.com" style="color: rgb(192, 230, 255); text-decoration: none;">alchemierabioelectronics@gmail.com</a> 
+      | 📞 +91 9191080 48750 | 📞 +91 99001 63967 | 📞 +91 9080 856131
+    </p>
+    <p style="font-size: 13px; margin: 0; color: #666;">
+      <a href="https://www.indiumlaboratory.com/" style="color: rgb(159, 217, 255); text-decoration: none;">🌐 www.indiumlaboratory.com</a>
+    </p>
+  </div>
+
+  <!-- Disclaimer -->
+  <hr style="border: none; border-top: 1px solid rgb(0, 0, 0); margin: 25px 0;" />
+  <p style="font-size: 11px; color: #888; text-align: left; margin: 0; line-height: 1.4;">
+    This is an automated notification from CIMS. Please do not reply directly to this email. 
+    For assistance, contact <a href="mailto:${process.env.EMAIL_USER}" style="color: rgb(152, 214, 255); text-decoration: none;">${process.env.EMAIL_USER}</a>.
+  </p>
+</div>`, // Simplified for brevity
       attachments: [{ filename: scrapPhoto.originalname, path: scrapPhoto.path }],
     };
 
