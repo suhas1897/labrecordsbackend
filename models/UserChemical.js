@@ -1,11 +1,13 @@
 const mongoose = require('mongoose');
-const UserChemicalSchema = new mongoose.Schema({
+
+const userChemicalSchema = new mongoose.Schema({
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    name: { type: String, required: true },
     chemicalId: { type: String, required: true },
     chemicalName: { type: String, required: true },
-    gramsUsed: { type: Number, required: true },
-    date: { type: Date, default: Date.now }
+    quantityUsed: { type: Number, required: true }, // Renamed from gramsUsed
+    unit: { type: String, required: true }, // Add unit field
+    date: { type: Date, default: Date.now },
+    name: { type: String, required: true }
 });
 
-module.exports = mongoose.model('UserChemical', UserChemicalSchema);
+module.exports = mongoose.model('UserChemical', userChemicalSchema);
